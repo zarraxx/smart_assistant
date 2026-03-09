@@ -184,6 +184,38 @@ MCP is mounted under `/mcp`, and the Smart Tools HTTP app is exposed at `/mcp/sm
 }
 ```
 
+### `showPatientReportModal`
+
+- Purpose: send a Socket.IO function event to the client bound to the given session and open the patient report modal
+- Parameter: `session_id` is the Dify `session_id` used to identify the current chat session and route the event to the correct Socket.IO room
+- Emitted Socket.IO event name: `message`
+
+### Emitted payload
+
+```json
+{
+  "type": "function",
+  "name": "showPatientReportModal",
+  "params": {}
+}
+```
+
+### `showQueueModal`
+
+- Purpose: send a Socket.IO function event to the client bound to the given session and open the queue modal
+- Parameter: `session_id` is the Dify `session_id` used to identify the current chat session and route the event to the correct Socket.IO room
+- Emitted Socket.IO event name: `message`
+
+### Emitted payload
+
+```json
+{
+  "type": "function",
+  "name": "showQueueModal",
+  "params": {}
+}
+```
+
 ## Demo Page
 
 Open `/` to use the built-in demo page:

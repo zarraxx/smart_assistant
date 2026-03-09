@@ -184,6 +184,38 @@ MCP 挂载在 `/mcp`，Smart Tools HTTP 应用暴露在 `/mcp/smart-tools`。
 }
 ```
 
+### `showPatientReportModal`
+
+- 用途：向指定会话绑定的客户端发送 Socket.IO 函数事件，并打开患者报告弹窗
+- 参数：`session_id` 指代 Dify 的 `session_id`，用于标识当前聊天会话并路由到正确的 Socket.IO 房间
+- 下发的 Socket.IO 事件名：`message`
+
+### 下发载荷示例
+
+```json
+{
+  "type": "function",
+  "name": "showPatientReportModal",
+  "params": {}
+}
+```
+
+### `showQueueModal`
+
+- 用途：向指定会话绑定的客户端发送 Socket.IO 函数事件，并打开候诊队列弹窗
+- 参数：`session_id` 指代 Dify 的 `session_id`，用于标识当前聊天会话并路由到正确的 Socket.IO 房间
+- 下发的 Socket.IO 事件名：`message`
+
+### 下发载荷示例
+
+```json
+{
+  "type": "function",
+  "name": "showQueueModal",
+  "params": {}
+}
+```
+
 ## Demo 页面
 
 访问 `/` 可打开内置调试页面：

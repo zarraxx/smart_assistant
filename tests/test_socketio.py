@@ -2,7 +2,11 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from src.webapp.assistant_app import app
-from src.webapp.mcp.mcp_app import showDepartmentAppointmentModal
+from src.webapp.mcp.mcp_app import (
+    showDepartmentAppointmentModal,
+    showPatientReportModal,
+    showQueueModal,
+)
 from src.webapp.socketio_app import emit_session_event, resolve_session_id, connect, message, socket_server
 
 
@@ -72,6 +76,36 @@ class McpToolSocketBridgeTestCase(unittest.IsolatedAsyncioTestCase):
 
         with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
             result = await showDepartmentAppointmentModal("sess_789")
+
+        mock_emit.assert_awaited_once_with("sess_789", expected_payload)
+        self.assertEqual(result["success"], True)
+        self.assertEqual(result["session_id"], "sess_789")
+        self.assertEqual(result["payload"], expected_payload)
+
+    async def test_show_patient_report_modal_emits_socket_event(self):
+        expected_payload = {
+            "type": "function",
+            "name": "showPatientReportModal",
+            "params": {},
+        }
+
+        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+            result = await showPatientReportModal("sess_789")
+
+        mock_emit.assert_awaited_once_with("sess_789", expected_payload)
+        self.assertEqual(result["success"], True)
+        self.assertEqual(result["session_id"], "sess_789")
+        self.assertEqual(result["payload"], expected_payload)
+
+    async def test_show_queue_modal_emits_socket_event(self):
+        expected_payload = {
+            "type": "function",
+            "name": "showQueueModal",
+            "params": {},
+        }
+
+        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+            result = await showQueueModal("sess_789")
 
         mock_emit.assert_awaited_once_with("sess_789", expected_payload)
         self.assertEqual(result["success"], True)
