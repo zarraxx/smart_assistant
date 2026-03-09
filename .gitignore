@@ -1,0 +1,32 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.python-version
+
+# Virtual environments
+*.iml
+.idea/
+.venv
+.env
+*.pcm
+.pytest_cache
+.tox
+.eggs
+.coverage
+.pytest_cache
+.mypy_cache
+.nox
+.build
+.cache
+.ipynb_checkpoints
+.ipynb_checkpoints/*.ipynb
+.ipynb_checkpoints/*.py
+.ipynb_checkpoints/*.html
+.ipynb_checkpoints/*.json
+.ipynb_checkpoints/*.md
+.ipynb_checkpoints/*.txt
+.ipynb_checkpoints/*.csv
