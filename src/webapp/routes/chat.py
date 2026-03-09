@@ -17,8 +17,8 @@ from src.webapp.schemas.chat import (
     CreateChatResponseData,
 )
 from src.webapp.services.dify_chat import (
+    AsyncDifyChatGateway,
     DifyGatewayError,
-    RequestsDifyChatGateway,
 )
 from src.webapp.services.session_store import RedisSessionStore, SessionStore
 
@@ -40,7 +40,7 @@ def get_session_store(
 
 
 def get_dify_chat_gateway(settings: Settings = Depends(get_settings)):
-    return RequestsDifyChatGateway(
+    return AsyncDifyChatGateway(
         base_url=settings.default_dify_url,
         api_key=settings.default_dify_api_key,
     )
@@ -94,7 +94,7 @@ async def create_chat_completion(
 
     try:
         if request.response_mode == "blocking":
-            response_payload = dify_chat_gateway.create_blocking_chat_message(payload)
+            response_payload = await dify_chat_gateway.create_blocking_chat_message(payload)
             await _bind_conversation_id_if_missing(
                 session_store=session_store,
                 session_payload=session_payload,
@@ -103,7 +103,7 @@ async def create_chat_completion(
             )
             return JSONResponse(content=response_payload)
 
-        stream_response = dify_chat_gateway.open_stream_chat_message(payload)
+        stream_response = await dify_chat_gateway.open_stream_chat_message(payload)
     except DifyGatewayError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
@@ -178,7 +178,7 @@ async def _iter_streaming_content_and_bind_conversation_id(
     conversation_bound = bool(session_payload.get("conversation_id"))
 
     try:
-        for chunk in response.iter_content(chunk_size=chunk_size):
+        async for chunk in response.aiter_bytes(chunk_size=chunk_size):
             if not chunk:
                 continue
 
@@ -203,7 +203,7 @@ async def _iter_streaming_content_and_bind_conversation_id(
                 flush=True,
             )
     finally:
-        response.close()
+        await response.aclose()
 
 
 async def _process_sse_buffer(

@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from src.webapp.assistant_app import app
+from src.webapp.mcp.mcp_app import showDepartmentAppointmentModal
 from src.webapp.socketio_app import emit_session_event, resolve_session_id, connect, message, socket_server
 
 
@@ -59,6 +60,23 @@ class SocketIoSessionBindingTestCase(unittest.IsolatedAsyncioTestCase):
             await message("socket_sid", payload)
 
         mock_emit.assert_awaited_once_with("message", payload["params"], to="socket_sid")
+
+
+class McpToolSocketBridgeTestCase(unittest.IsolatedAsyncioTestCase):
+    async def test_show_department_appointment_modal_emits_socket_event(self):
+        expected_payload = {
+            "type": "function",
+            "name": "showDepartmentAppointment",
+            "params": {},
+        }
+
+        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+            result = await showDepartmentAppointmentModal("sess_789")
+
+        mock_emit.assert_awaited_once_with("sess_789", expected_payload)
+        self.assertEqual(result["success"], True)
+        self.assertEqual(result["session_id"], "sess_789")
+        self.assertEqual(result["payload"], expected_payload)
 
 
 if __name__ == "__main__":

@@ -76,6 +76,7 @@ class AsyncDifyClient:
         method: str,
         endpoint: str,
         json: Dict | None = None,
+        data: Dict | None = None,
         params: Dict | None = None,
         stream: bool = False,
         **kwargs,
@@ -86,6 +87,7 @@ class AsyncDifyClient:
             method: HTTP method (GET, POST, PUT, PATCH, DELETE)
             endpoint: API endpoint path
             json: JSON request body
+            data: JSON request body alias for existing call sites
             params: Query parameters
             stream: Whether to stream the response
             **kwargs: Additional arguments to pass to httpx.request
@@ -98,14 +100,16 @@ class AsyncDifyClient:
             "Content-Type": "application/json",
         }
 
-        response = await self._client.request(
+        request = self._client.build_request(
             method,
             endpoint,
-            json=json,
+            json=json if json is not None else data,
             params=params,
             headers=headers,
             **kwargs,
         )
+
+        response = await self._client.send(request, stream=stream)
 
         return response
 
@@ -293,6 +297,7 @@ class AsyncChatClient(AsyncDifyClient):
         response_mode: Literal["blocking", "streaming"] = "blocking",
         conversation_id: str | None = None,
         files: Dict | None = None,
+        auto_generate_name: bool | None = None,
     ):
         """Create a chat message.
 
@@ -303,6 +308,7 @@ class AsyncChatClient(AsyncDifyClient):
             response_mode: Response mode ('blocking' or 'streaming')
             conversation_id: Optional conversation ID for context
             files: Optional files to include
+            auto_generate_name: Whether Dify should auto-generate the conversation title
 
         Returns:
             httpx.Response object
@@ -316,6 +322,8 @@ class AsyncChatClient(AsyncDifyClient):
         }
         if conversation_id:
             data["conversation_id"] = conversation_id
+        if auto_generate_name is not None:
+            data["auto_generate_name"] = auto_generate_name
 
         return await self._send_request(
             "POST",

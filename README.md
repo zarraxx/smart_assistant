@@ -42,6 +42,7 @@ python -m src.startup
 | `/chat/create` | `POST` | Create a chat session and return `session_id` |
 | `/chat/completion` | `POST` | Proxy Dify chat completion requests using `session_id` |
 | `/socket.io` | `Socket.IO` | Session-level realtime message channel |
+| `/mcp/smart-tools` | `MCP HTTP` | MCP tools that can trigger session-scoped client actions |
 | `/` | `GET` | Demo page |
 
 ## `POST /chat/create`
@@ -162,6 +163,26 @@ Frontend behavior:
 ```
 
 When the server receives this payload, it sends back `params` to the same Socket.IO client through the `message` event.
+
+## MCP Tools
+
+MCP is mounted under `/mcp`, and the Smart Tools HTTP app is exposed at `/mcp/smart-tools`.
+
+### `showDepartmentAppointmentModal`
+
+- Purpose: send a Socket.IO function event to the client bound to the given session
+- Parameter: `session_id` is the Dify `session_id` used to identify the current chat session and route the event to the correct Socket.IO room
+- Emitted Socket.IO event name: `message`
+
+### Emitted payload
+
+```json
+{
+  "type": "function",
+  "name": "showDepartmentAppointment",
+  "params": {}
+}
+```
 
 ## Demo Page
 

@@ -1,4 +1,4 @@
-from dify_client.async_client import (
+from .async_client import (
     AsyncChatClient,
     AsyncCompletionClient,
     AsyncDifyClient,
@@ -6,7 +6,7 @@ from dify_client.async_client import (
     AsyncWorkflowClient,
     AsyncWorkspaceClient,
 )
-from dify_client.client import (
+from .client import (
     ChatClient,
     CompletionClient,
     DifyClient,

@@ -1,6 +1,9 @@
-from typing import Any, Iterator, Protocol
+import json
+from typing import Any, AsyncIterator, Protocol
 
-import requests
+import httpx
+
+from src.dify_client import AsyncChatClient
 
 class DifyGatewayError(Exception):
     def __init__(self, *, status_code: int, detail: str):
@@ -10,44 +13,75 @@ class DifyGatewayError(Exception):
 
 
 class DifyChatGateway(Protocol):
-    def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]: ...
+    async def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
-    def open_stream_chat_message(self, payload: dict[str, Any]): ...
+    async def open_stream_chat_message(self, payload: dict[str, Any]): ...
 
 
-class RequestsDifyChatGateway:
+class StreamingDifyResponse:
+    def __init__(self, *, client: AsyncChatClient, response: httpx.Response):
+        self._client = client
+        self._response = response
+
+    @property
+    def headers(self):
+        return self._response.headers
+
+    async def aiter_bytes(self, chunk_size: int = 8192) -> AsyncIterator[bytes]:
+        async for chunk in self._response.aiter_bytes(chunk_size=chunk_size):
+            if chunk:
+                yield chunk
+
+    async def aclose(self) -> None:
+        await self._response.aclose()
+        await self._client.aclose()
+
+
+class AsyncDifyChatGateway:
     def __init__(self, *, base_url: str, api_key: str, timeout_seconds: int = 300):
         self.base_url = _normalize_base_url(base_url)
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
 
-    def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]:
-        response = requests.post(
-            f"{self.base_url}/chat-messages",
-            json=payload,
-            headers=self._build_headers(),
-            timeout=self.timeout_seconds,
-        )
+    async def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        async with AsyncChatClient(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=float(self.timeout_seconds),
+        ) as client:
+            response = await client.create_chat_message(
+                inputs=payload.get("inputs", {}),
+                query=payload["query"],
+                user=payload["user"],
+                response_mode="blocking",
+                conversation_id=payload.get("conversation_id"),
+                files=payload.get("files"),
+                auto_generate_name=payload.get("auto_generate_name"),
+            )
         self._raise_for_error_response(response)
         return response.json()
 
-    def open_stream_chat_message(self, payload: dict[str, Any]):
-        print(f"Sending request to Dify Chat Gateway at {self.base_url}/chat-messages with payload: {payload}")
-        response = requests.post(
-            f"{self.base_url}/chat-messages",
-            json=payload,
-            headers=self._build_headers(),
-            timeout=self.timeout_seconds,
-            stream=True,
+    async def open_stream_chat_message(self, payload: dict[str, Any]) -> StreamingDifyResponse:
+        client = AsyncChatClient(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=float(self.timeout_seconds),
         )
-        self._raise_for_error_response(response)
-        return response
-
-    def _build_headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json; charset=utf-8",
-        }
+        try:
+            response = await client.create_chat_message(
+                inputs=payload.get("inputs", {}),
+                query=payload["query"],
+                user=payload["user"],
+                response_mode="streaming",
+                conversation_id=payload.get("conversation_id"),
+                files=payload.get("files"),
+                auto_generate_name=payload.get("auto_generate_name"),
+            )
+            self._raise_for_error_response(response)
+            return StreamingDifyResponse(client=client, response=response)
+        except Exception:
+            await client.aclose()
+            raise
 
     def _raise_for_error_response(self, response) -> None:
         if response.status_code < 400:
@@ -55,15 +89,6 @@ class RequestsDifyChatGateway:
 
         detail = _extract_error_detail(response)
         raise DifyGatewayError(status_code=response.status_code, detail=detail)
-
-
-def iter_streaming_content(response, chunk_size: int = 8192) -> Iterator[bytes]:
-    try:
-        for chunk in response.iter_content(chunk_size=chunk_size):
-            if chunk:
-                yield chunk
-    finally:
-        response.close()
 
 
 def _normalize_base_url(base_url: str) -> str:
@@ -76,7 +101,7 @@ def _normalize_base_url(base_url: str) -> str:
 def _extract_error_detail(response) -> str:
     try:
         data = response.json()
-    except ValueError:
+    except (ValueError, json.JSONDecodeError):
         return response.text or "Dify request failed"
 
     if isinstance(data, dict):

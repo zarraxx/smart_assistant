@@ -42,6 +42,7 @@ python -m src.startup
 | `/chat/create` | `POST` | 创建聊天 Session 并返回 `session_id` |
 | `/chat/completion` | `POST` | 基于 `session_id` 代理 Dify 对话请求 |
 | `/socket.io` | `Socket.IO` | 会话级实时消息通道 |
+| `/mcp/smart-tools` | `MCP HTTP` | 可触发会话级客户端动作的 MCP 工具入口 |
 | `/` | `GET` | Demo 页面 |
 
 ## `POST /chat/create`
@@ -162,6 +163,26 @@ python -m src.startup
 ```
 
 当服务端收到该消息时，会把 `params` 原样通过 `message` 事件回送给当前 Socket.IO 连接。
+
+## MCP 工具
+
+MCP 挂载在 `/mcp`，Smart Tools HTTP 应用暴露在 `/mcp/smart-tools`。
+
+### `showDepartmentAppointmentModal`
+
+- 用途：向指定会话绑定的客户端发送 Socket.IO 函数事件
+- 参数：`session_id` 指代 Dify 的 `session_id`，用于标识当前聊天会话并路由到正确的 Socket.IO 房间
+- 下发的 Socket.IO 事件名：`message`
+
+### 下发载荷示例
+
+```json
+{
+  "type": "function",
+  "name": "showDepartmentAppointment",
+  "params": {}
+}
+```
 
 ## Demo 页面
 

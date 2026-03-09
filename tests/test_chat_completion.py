@@ -14,10 +14,11 @@ class FakeStreamResponse:
         self.text = text
         self.closed = False
 
-    def iter_content(self, chunk_size=8192):
-        yield from self._chunks
+    async def aiter_bytes(self, chunk_size=8192):
+        for chunk in self._chunks:
+            yield chunk
 
-    def close(self):
+    async def aclose(self):
         self.closed = True
 
 
@@ -26,7 +27,7 @@ class FakeDifyChatGateway:
         self.blocking_payloads = []
         self.streaming_payloads = []
 
-    def create_blocking_chat_message(self, payload):
+    async def create_blocking_chat_message(self, payload):
         self.blocking_payloads.append(payload)
         return {
             "event": "message",
@@ -34,7 +35,7 @@ class FakeDifyChatGateway:
             "conversation_id": "conv_123",
         }
 
-    def open_stream_chat_message(self, payload):
+    async def open_stream_chat_message(self, payload):
         self.streaming_payloads.append(payload)
         return FakeStreamResponse(
             chunks=[
@@ -105,7 +106,10 @@ class ChatCompletionApiTestCase(unittest.TestCase):
         self.assertEqual(len(self.fake_gateway.blocking_payloads), 1)
         self.assertEqual(self.fake_gateway.blocking_payloads[0]["query"], "What's the weather?")
         self.assertEqual(self.fake_gateway.blocking_payloads[0]["user"], "u10001")
-        self.assertEqual(self.fake_gateway.blocking_payloads[0]["inputs"], {"topic": "weather"})
+        self.assertEqual(
+            self.fake_gateway.blocking_payloads[0]["inputs"],
+            {"topic": "weather", "__session_id__": "sess_123"},
+        )
         self.assertEqual(self.fake_store.sessions["sess_123"]["conversation_id"], "conv_123")
 
     def test_completion_reuses_stored_conversation_id(self):
