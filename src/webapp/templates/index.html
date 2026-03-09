@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Assistant Demo</title>
+    <link rel="stylesheet" href="static/css/index.css">
+</head>
+<body>
+    <div class="page">
+        <header class="header">
+            <h1>智能助手演示页</h1>
+            <p>左侧用于聊天与弹窗联调，右侧用于发送和观察 Socket.IO 调试消息。</p>
+            <div class="demo-actions">
+                <button type="button" onclick="showDepartmentAppointmentModal()">测试科室预约界面</button>
+                <button type="button" onclick="showPatientReportModal()">测试患者报告界面</button>
+                <button type="button" onclick="showQueueModal()">测试候诊队列界面</button>
+            </div>
+        </header>
+
+        <div class="page-layout">
+            <section class="chat-shell">
+                <div class="toolbar">
+                    <div class="field">
+                        <label for="userIdInput">用户 ID</label>
+                        <input id="userIdInput" type="text" value="u10001" placeholder="请输入用户 ID">
+                    </div>
+                    <div class="field">
+                        <label for="currentSessionLabel">当前 Session</label>
+                        <input id="currentSessionLabel" type="text" readonly placeholder="首次发送后自动创建">
+                    </div>
+                    <button id="resetConversationButton" type="button">重置 Session</button>
+                </div>
+
+                <div id="messages" class="messages">
+                    <div class="message message-system">欢迎使用智能助手，请先输入用户 ID，再开始聊天。</div>
+                </div>
+
+                <div class="composer">
+                    <textarea id="messageInput" placeholder="请输入你的问题，例如：帮我总结今天的工作安排"></textarea>
+                    <button id="sendButton" type="button">发送</button>
+                </div>
+
+                <div id="statusText" class="status">状态：空闲</div>
+            </section>
+
+            <aside class="debug-panel">
+                <h2>Socket.IO 调试</h2>
+                <p>右侧会向当前浏览器连接发送调试消息，并显示收发日志。</p>
+                <div class="field">
+                    <label for="debugSessionIdInput">当前 Session ID</label>
+                    <input id="debugSessionIdInput" type="text" readonly placeholder="首次发送聊天后自动创建">
+                </div>
+                <div class="field">
+                    <label for="debugPayloadInput">调试消息 JSON</label>
+                    <textarea id="debugPayloadInput">{
+  "type": "echo",
+  "name": "debug",
+  "params": {
+    "type": "function",
+    "name": "showPatientReportModal",
+    "params": {}
+  }
+}</textarea>
+                </div>
+                <div class="debug-actions">
+                    <button id="sendDebugMessageButton" type="button">发送调试消息</button>
+                    <button id="clearDebugLogButton" type="button">清空日志</button>
+                </div>
+                <div id="debugLogEl" class="debug-log">等待 Socket.IO 消息...</div>
+            </aside>
+        </div>
+    </div>
+
+    <div id="departmentAppointmentModal" class="modal-mask" onclick="handleModalMaskClick(event, 'departmentAppointmentModal')">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>科室预约界面</h2>
+                <button class="modal-close" type="button" onclick="closeModal('departmentAppointmentModal')">关闭</button>
+            </div>
+            <div class="modal-body">
+                <div class="demo-grid">
+                    <div class="demo-card"><strong>患者信息</strong><div>姓名：张三</div><div>性别：男</div><div>年龄：34 岁</div></div>
+                    <div class="demo-card"><strong>预约信息</strong><div>院区：门诊综合楼</div><div>科室：呼吸内科</div><div>日期：2026-03-09</div></div>
+                    <div class="demo-card demo-card-wide"><strong>可预约号源</strong><div class="appointment-list"><button type="button">上午 09:00 · 王医生</button><button type="button">上午 10:30 · 李医生</button><button type="button">下午 14:00 · 赵医生</button><button type="button">下午 15:30 · 周医生</button></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="patientReportModal" class="modal-mask" onclick="handleModalMaskClick(event, 'patientReportModal')">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>患者报告界面</h2>
+                <button class="modal-close" type="button" onclick="closeModal('patientReportModal')">关闭</button>
+            </div>
+            <div class="modal-body">
+                <div class="demo-grid">
+                    <div class="demo-card"><strong>患者信息</strong><div>姓名：李四</div><div>门诊号：M20260309001</div><div>检查日期：2026-03-09 09:20</div></div>
+                    <div class="demo-card demo-card-wide"><strong>检查报告</strong><div>项目：胸部 CT</div><div>结论：双肺纹理增多，建议结合临床症状复查。</div><div>医生：影像科 王医生</div></div>
+                    <div class="demo-card demo-card-wide"><strong>检验报告</strong><div>项目：血常规</div><div>白细胞：7.2 ×10^9/L</div><div>血红蛋白：139 g/L</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="queueModal" class="modal-mask" onclick="handleModalMaskClick(event, 'queueModal')">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>当前候诊队列</h2>
+                <button class="modal-close" type="button" onclick="closeModal('queueModal')">关闭</button>
+            </div>
+            <div class="modal-body">
+                <div class="queue-list">
+                    <div class="queue-item"><div><strong>A012 号 · 王女士</strong><div>预计等待：8 分钟</div></div><span class="demo-tag">即将就诊</span></div>
+                    <div class="queue-item"><div><strong>A013 号 · 赵先生</strong><div>预计等待：15 分钟</div></div><span class="demo-tag">候诊中</span></div>
+                    <div class="queue-item"><div><strong>A014 号 · 钱女士</strong><div>预计等待：21 分钟</div></div><span class="demo-tag">候诊中</span></div>
+                    <div class="queue-item"><div><strong>A015 号 · 孙先生</strong><div>预计等待：35 分钟</div></div><span class="demo-tag">候诊中</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+    <script src="static/js/index.js"></script>
+</body>
+</html>
