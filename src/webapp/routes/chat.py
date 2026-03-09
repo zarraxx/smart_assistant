@@ -88,6 +88,10 @@ async def create_chat_completion(
     if isinstance(conversation_id, str) and conversation_id.strip():
         payload["conversation_id"] = conversation_id.strip()
 
+    inputs = payload.get("inputs", {})
+    inputs["__session_id__"] = request.session_id
+    payload["inputs"] = inputs
+
     try:
         if request.response_mode == "blocking":
             response_payload = dify_chat_gateway.create_blocking_chat_message(payload)

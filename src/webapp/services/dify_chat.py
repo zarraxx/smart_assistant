@@ -2,7 +2,6 @@ from typing import Any, Iterator, Protocol
 
 import requests
 
-
 class DifyGatewayError(Exception):
     def __init__(self, *, status_code: int, detail: str):
         self.status_code = status_code
@@ -33,6 +32,7 @@ class RequestsDifyChatGateway:
         return response.json()
 
     def open_stream_chat_message(self, payload: dict[str, Any]):
+        print(f"Sending request to Dify Chat Gateway at {self.base_url}/chat-messages with payload: {payload}")
         response = requests.post(
             f"{self.base_url}/chat-messages",
             json=payload,
