@@ -22,7 +22,7 @@ USER ${APP_USER}
 COPY pyproject.toml .
 COPY README.md .
 # 5 复制应用代码
-COPY ./src/ ./src
+COPY ./src .
 
 # 6. 安装依赖
 # 将安装 uv 和安装项目依赖合并
