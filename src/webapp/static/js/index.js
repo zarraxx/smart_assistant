@@ -113,7 +113,7 @@ function connectSocketSession(sessionId) {
     socketClient = io({
         path: socketPath,
         auth: { sessionId },
-        transports: ['websocket', 'polling'],
+       // transports: ['websocket', 'polling'],
     });
     socketClient.on('connect', () => setStatus(`Socket.IO \u5df2\u8fde\u63a5\uff08${sessionId}\uff09`));
     socketClient.on('disconnect', () => setStatus('Socket.IO \u5df2\u65ad\u5f00'));
