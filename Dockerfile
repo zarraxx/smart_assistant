@@ -15,7 +15,7 @@ WORKDIR /app
 
 # 配置镜像元数据
 # 切换到非 root 用户
-USER ${APP_USER}
+
 
 # 4. 复制项目文件
 # 先只复制依赖定义文件，以便利用 Docker 的层缓存机制
@@ -24,6 +24,9 @@ COPY README.md .
 # 5 复制应用代码
 COPY ./src ./src
 RUN  chown -R "${APP_USER}:${APP_USER}" /app && ls -la /app
+
+
+USER ${APP_USER}
 # 6. 安装依赖
 # 将安装 uv 和安装项目依赖合并
 RUN uv venv && uv pip install --no-cache-dir .
