@@ -1,0 +1,48 @@
+@startuml
+title Dify 通过 MCP + Socket.IO 触发客户端界面的时序图
+
+actor User as 用户
+participant Browser as 浏览器前端
+participant ChatAPI as "/chat/create\n/chat/completion"
+database Redis as Redis
+participant Dify as "Dify/Agent"
+participant MCP as "/mcp/smart-tools"
+participant SocketServer as SocketServer
+
+== 建立本地会话与Socket连接 ==
+用户 -> 浏览器前端 : 打开 Demo 页面并发起聊天
+浏览器前端 -> ChatAPI : POST /chat/create
+ChatAPI -> Redis : save_session(session_id,...)
+Redis --> ChatAPI : ok
+ChatAPI --> 浏览器前端 : 返回 session_id
+浏览器前端 -> SocketServer : connect(auth.sessionId=session_id)
+SocketServer -> SocketServer : enter_room(sid, session_id)
+SocketServer --> 浏览器前端 : 连接成功
+
+== 发起 Dify 对话 ==
+用户 -> 浏览器前端 : 输入问题
+浏览器前端 -> ChatAPI : POST /chat/completion(session_id,...)
+ChatAPI -> Redis : get_session(session_id)
+Redis --> ChatAPI : session payload
+ChatAPI -> ChatAPI : 注入 inputs.__session_id__
+ChatAPI -> Dify : create_chat_message(..., inputs.__session_id__)
+alt 首次会话未绑定 conversation_id
+  Dify --> ChatAPI : 返回 answer + conversation_id
+  ChatAPI -> Redis : set_conversation_id(session_id, conversation_id)
+else 已存在 conversation_id
+  Dify --> ChatAPI : 返回 answer
+end
+ChatAPI --> 浏览器前端 : SSE/JSON 聊天结果
+
+== Dify 调用 MCP Tool 触发客户端界面 ==
+Dify -> MCP : 调用 Tool(session_id)
+MCP -> MCP : 组装 payload\n{type:function,name,params}
+MCP -> SocketServer : emit_session_event(session_id, payload)
+SocketServer -> SocketServer : emit("message", payload, to=session_id)
+SocketServer --> 浏览器前端 : message(payload)
+浏览器前端 -> 浏览器前端 : handleSocketMessage()
+浏览器前端 -> 浏览器前端 : socketFunctionHandlers[name]()
+浏览器前端 -> 浏览器前端 : 打开对应弹窗/界面
+MCP --> Dify : 返回 success + payload
+
+@enduml

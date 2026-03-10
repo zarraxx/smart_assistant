@@ -1,0 +1,44 @@
+@startuml
+title Dify 到客户端界面能力桥接流程图
+
+start
+
+:浏览器调用 /chat/create;
+:后端生成 session_id;
+:Redis 保存 Session 元数据;
+:浏览器以 auth.sessionId 建立 Socket.IO 连接;
+:服务端将 socket 加入 session_id room;
+
+:浏览器调用 /chat/completion;
+:后端读取 Session;
+:向 Dify inputs 注入 __session_id__;
+
+if (Session 已有 conversation_id?) then (是)
+  :把 conversation_id 一并带给 Dify;
+else (否)
+  :先不带 conversation_id 请求 Dify;
+endif
+
+:Dify 返回聊天结果;
+
+if (响应中包含新的 conversation_id?) then (是)
+  :回写 Redis 绑定 conversation_id;
+else (否)
+endif
+
+:Dify 在工作流/Agent 中决定调用 MCP Tool;
+:向 /mcp/smart-tools 发送 session_id;
+:FastMCP 命中具体 Tool;
+:后端生成统一函数消息 payload;
+:按 session_id 向 Socket.IO room 发 message 事件;
+:浏览器收到函数消息;
+
+if (前端存在同名 handler?) then (是)
+  :执行对应界面函数;
+  :打开目标弹窗/页面动作;
+else (否)
+  :记录未支持的函数消息;
+endif
+
+stop
+@enduml

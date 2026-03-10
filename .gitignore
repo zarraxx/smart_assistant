@@ -22,6 +22,7 @@ wheels/
 .nox
 .build
 .cache
+un.lock
 .ipynb_checkpoints
 .ipynb_checkpoints/*.ipynb
 .ipynb_checkpoints/*.py
