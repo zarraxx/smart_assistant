@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # 部署的Pod名称
+  name: <IMAGE_NAME>
+  # 服务部署到指定命名空间
+  namespace: <NAMESPACE>
+  #labels:
+  #  app: @artifactId@
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <IMAGE_NAME>
+  template:
+    metadata:
+      labels:
+        app: <IMAGE_NAME>
+        version: 1.0.0
+      annotations:
+        dev.ops.log/enabled: "true"
+        dev.ops.app: "<NAMESPACE>"
+        dev.ops.lang: "python"
+    spec:
+      containers:
+        - name: <IMAGE_NAME>-pod
+          image: <REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>
+          imagePullPolicy: Always   # 总是拉取最新镜像
+          volumeMounts:
+            - mountPath: >- 
+                /app/.env
+              name: config
+              readOnly: true
+              subPath: smart.env
+#          env:
+#            - name: ACTIVE
+#              value: <ACTIVE>
+      volumes:
+        - configMap:
+            name: ai-config
+          name: config
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    name: <IMAGE_NAME>
+  name: <IMAGE_NAME>-svc
+spec:
+  ports:
+    - name: tcp
+      port: 8000
+      targetPort: 8000
+  selector:
+    app: <IMAGE_NAME>
