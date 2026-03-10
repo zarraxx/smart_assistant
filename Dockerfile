@@ -23,7 +23,7 @@ COPY pyproject.toml .
 COPY README.md .
 # 5 复制应用代码
 COPY ./src ./src
-RUN ls -la /app && chown -R "${APP_USER}:${APP_USER}" /app
+RUN  chown -R "${APP_USER}:${APP_USER}" /app && ls -la /app &&
 # 6. 安装依赖
 # 将安装 uv 和安装项目依赖合并
 RUN uv venv && uv pip install --no-cache-dir .
