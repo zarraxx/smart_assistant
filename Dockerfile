@@ -20,7 +20,7 @@ USER ${APP_USER}
 # 4. 复制项目文件
 # 先只复制依赖定义文件，以便利用 Docker 的层缓存机制
 COPY pyproject.toml .
-
+COPY README.md .
 # 5 复制应用代码
 COPY ./src/ ./src
 
