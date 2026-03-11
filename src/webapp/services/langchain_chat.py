@@ -126,13 +126,13 @@ async def showQueueModal(
     logging.info(f"call showQueueModal session id:{runtime.context.user_id}")
     return await _show_client_modal(runtime.context.user_id, "showQueueModal")
 
-
+checkpointer=InMemorySaver()
 class AsyncLangchainChatGateway:
     def __init__(self, *, base_url: str, api_key: str, model: str, timeout_seconds: int = 300):
         self.base_url = _normalize_base_url(base_url)
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
-        self.checkpointer = InMemorySaver()
+        self.checkpointer = checkpointer
 
         model = ChatOpenAI(
             model=model,
@@ -169,8 +169,8 @@ class AsyncLangchainChatGateway:
         config = {"configurable": {"thread_id": session_id}}
         async for chunk in   self.agent.astream(
             {"messages": [{"role": payload["role"], "content": payload["content"]}]},
+                {"configurable": {"thread_id": session_id}},
             stream_mode="messages",
-            config=config,
             context=Context(user_id=session_id),
         ):
             if isinstance(chunk, tuple):

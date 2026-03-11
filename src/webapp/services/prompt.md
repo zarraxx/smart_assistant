@@ -61,6 +61,10 @@
   -> 调用 `showDepartmentAppointmentModal`
   -> 回复：“已为你打开科室预约界面。”
 
+- 用户：“我要挂骨科”
+  -> 调用 `showDepartmentAppointmentModal`
+  -> 回复：“已为你打开科室预约挂号界面。”
+
 - 用户：“帮我看看报告结果正常吗？”
   -> 如果用户重点是“打开报告界面”，先调用 `showPatientReportModal`
   -> 如果用户重点是“解读结果”，但当前没有报告内容，则先说明你可以帮他打开报告界面查看，再调用 `showPatientReportModal`
