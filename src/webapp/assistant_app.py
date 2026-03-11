@@ -20,7 +20,7 @@ from src.webapp.socketio_app import socket_asgi_app, socket_server
 from src.webapp.mcp.mcp_app import mcp,mcp_app
 
 import logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 BASE_DIR = Path(__file__).parent
 logging.info(f"ROOT_PATH: {BASE_DIR}")

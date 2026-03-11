@@ -48,55 +48,84 @@ def add_number(a: int, b: int, runtime: ToolRuntime[Context]) -> int:
     logging.info(f"user_id:{user_id}")
     return a + b
 
-@tool
-def showDepartmentAppointmentModal(
+# @tool
+# def showDepartmentAppointmentModal(
+#     department_name: Annotated[str, Field(description="科室名称")],
+#     runtime: ToolRuntime[Context],
+# ) -> dict:
+#     """打开科室预约界面.
+#     """
+#     #return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment")
+#
+#
+#     logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
+#     result = async_to_sync(_show_client_modal)(
+#     runtime.context.user_id,
+#     "showDepartmentAppointment"
+#     )
+#     logging.info(result)
+#     return result
+
+async def showDepartmentAppointmentModal(
     department_name: Annotated[str, Field(description="科室名称")],
     runtime: ToolRuntime[Context],
 ) -> dict:
     """打开科室预约界面.
     """
-    #return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment")
-
-
     logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
-    result = async_to_sync(_show_client_modal)(
-    runtime.context.user_id,
-    "showDepartmentAppointment"
-    )
-    logging.info(result)
-    return result
+    return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment")
 
 
-@tool
-def showPatientReportModal(
+# @tool
+# def showPatientReportModal(
+#     runtime: ToolRuntime[Context],
+# ) -> dict:
+#     """打开客户端的报告界面.
+#     """
+#     logging.info(f"call showPatientReportModal session id:{runtime.context.user_id}")
+#     result = async_to_sync(_show_client_modal)(
+#         runtime.context.user_id,
+#         "showPatientReportModal"
+#     )
+#     logging.info(result)
+#     return result
+#     #return await _show_client_modal(runtime.context.user_id, "showPatientReportModal")
+
+
+
+async def showPatientReportModal(
     runtime: ToolRuntime[Context],
 ) -> dict:
     """打开客户端的报告界面.
     """
     logging.info(f"call showPatientReportModal session id:{runtime.context.user_id}")
-    result = async_to_sync(_show_client_modal)(
-        runtime.context.user_id,
-        "showPatientReportModal"
-    )
-    logging.info(result)
-    return result
-    #return await _show_client_modal(runtime.context.user_id, "showPatientReportModal")
+    return await _show_client_modal(runtime.context.user_id, "showPatientReportModal")
 
 
-@tool
-def showQueueModal(
+# @tool
+# def showQueueModal(
+#     runtime: ToolRuntime[Context],
+# ) -> dict:
+#     """Trigger the queue modal on the client bound to the given session.
+#     """
+#     #return await _show_client_modal(runtime.context.user_id, "showQueueModal")
+#     logging.info(f"call showQueueModal session id:{runtime.context.user_id}")
+#     result = async_to_sync(_show_client_modal)(
+#         runtime.context.user_id,
+#         "showQueueModal"
+#     )
+#     logging.info(result)
+#     return result
+
+async def showQueueModal(
     runtime: ToolRuntime[Context],
 ) -> dict:
     """Trigger the queue modal on the client bound to the given session.
     """
-    #return await _show_client_modal(runtime.context.user_id, "showQueueModal")
+
     logging.info(f"call showQueueModal session id:{runtime.context.user_id}")
-    result = async_to_sync(_show_client_modal)(
-        runtime.context.user_id,
-        "showQueueModal"
-    )
-    logging.info(result)
-    return result
+    return await _show_client_modal(runtime.context.user_id, "showQueueModal")
+
 
 class AsyncLangchainChatGateway:
     def __init__(self, *, base_url: str, api_key: str, model: str, timeout_seconds: int = 300):
@@ -189,9 +218,17 @@ if __name__ == "__main__":
 
 
         checkpointer = InMemorySaver()
+
+        async def add_number_async(a: int, b: int, runtime: ToolRuntime[Context]) -> int:
+            '''得到两个整数相加后的值'''
+            logging.info("call add_number")
+            user_id = runtime.context.user_id
+            logging.info(f"user_id:{user_id}")
+            return a + b
+
         agent = create_agent(
             model=model,
-            tools=[add_number],
+            tools=[add_number_async],
             system_prompt="You are a helpful assistant",
             checkpointer=checkpointer
         )
