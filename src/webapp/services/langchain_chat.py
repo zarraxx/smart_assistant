@@ -73,6 +73,12 @@ async def showDepartmentAppointmentModal(
     """打开科室预约界面.
     """
     logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
+    if not department_name:
+        return {
+        "success": False,
+        "error_msg":"department_name must not be empty",
+        "session_id": runtime.context.user_id,
+        }
     return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment",params={"department_name": department_name})
 
 
