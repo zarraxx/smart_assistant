@@ -17,6 +17,9 @@ class Settings:
     server_host: str
     server_port: int
     server_reload: bool
+    openai_base_url: str
+    openai_api_key: str
+    openai_model:str
 
 
 @lru_cache
@@ -33,6 +36,9 @@ def get_settings() -> Settings:
         server_host=os.getenv("SERVER_HOST", "0.0.0.0"),
         server_port=int(os.getenv("SERVER_PORT", "8000")),
         server_reload=_get_bool_env("SERVER_RELOAD", True),
+        openai_base_url=os.getenv("OPENAI_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        openai_model=os.getenv("OPENAI_MODEL", "deepseek-v3"),
     )
 
 

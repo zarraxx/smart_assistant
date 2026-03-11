@@ -20,6 +20,7 @@ from src.webapp.services.dify_chat import (
     AsyncDifyChatGateway,
     DifyGatewayError,
 )
+from src.webapp.services.langchain_chat import (AsyncLangchainChatGateway)
 from src.webapp.services.session_store import RedisSessionStore, SessionStore
 
 
@@ -45,6 +46,10 @@ def get_dify_chat_gateway(settings: Settings = Depends(get_settings)):
         api_key=settings.default_dify_api_key,
     )
 
+def get_langchain_chat_gateway(settings: Settings = Depends(get_settings)) -> AsyncLangchainChatGateway:
+    return AsyncLangchainChatGateway(base_url = settings.openai_base_url,
+                                     api_key = settings.openai_api_key,
+                                     model = settings.openai_model,)
 
 @router.post("/create", response_model=CreateChatResponse)
 async def create_chat_session(
@@ -119,6 +124,53 @@ async def create_chat_completion(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+        },
+    )
+
+@router.post("/langchain")
+async def create_chat_completion(
+        request: ChatCompletionRequest,
+        session_store: SessionStore = Depends(get_session_store),
+        langchain_chat_gateway=Depends(get_langchain_chat_gateway),):
+    session_payload = await session_store.get_session(session_id=request.session_id)
+    if session_payload is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    payload = {
+        "session_id": request.session_id,
+        "role":"user",
+        "content":request.query
+    }
+
+    async def event_generator():
+        try:
+            # 调用你 Service 中的异步生成器
+            async for chunk in langchain_chat_gateway.open_stream_chat_message(payload):
+                # chunk 是 AIMessageChunk 对象
+                if chunk.content:
+                    # 格式 1: 纯文本流 (简单)
+                    # yield chunk.content
+
+                    # 格式 2: 标准 SSE (Server-Sent Events) 格式 (推荐，更具扩展性)
+                    # 前端通过 EventSource 或 fetch 的 reader 读取
+                    data = json.dumps({"event":"message","answer": chunk.content}, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+
+            # 结束标志（可选）
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            # 错误处理：在流中推送错误消息
+            error_data = json.dumps({"error": str(e)})
+            yield f"data: {error_data}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # 禁用 Nginx 缓存，确保流式实时性
         },
     )
 

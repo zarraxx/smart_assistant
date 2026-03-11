@@ -199,7 +199,10 @@ async function sendMessage() {
     setStatus('\u53d1\u9001\u4e2d');
     try {
         payload.session_id = await ensureChatSession(userId);
-        const response = await fetch(buildAppUrl('/chat/completion'), {
+
+        //let chatPath = '/chat/completion'
+        let chatPath = '/chat/langchain'
+        const response = await fetch(buildAppUrl(chatPath), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json; charset=utf-8' },
             body: JSON.stringify(payload),
