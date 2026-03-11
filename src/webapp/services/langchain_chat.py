@@ -24,11 +24,11 @@ class Context:
     user_id: str
 
 
-async def _show_client_modal(session_id: str, function_name: str) -> dict[str, Any]:
+async def _show_client_modal(session_id: str, function_name: str,params = {}) -> dict[str, Any]:
     payload = {
         "type": "function",
         "name": function_name,
-        "params": {},
+        "params": params,
     }
     logging.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
     await emit_session_event(session_id, payload)
@@ -73,7 +73,7 @@ async def showDepartmentAppointmentModal(
     """打开科室预约界面.
     """
     logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
-    return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment")
+    return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment",params={"department_name": department_name})
 
 
 # @tool
