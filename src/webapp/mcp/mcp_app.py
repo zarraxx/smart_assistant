@@ -75,4 +75,4 @@ async def showQueueModal(
     return await _show_client_modal(session_id, "showQueueModal")
 
 
-mcp_app = mcp.http_app(path='/smart-tools')
+mcp_app = mcp.http_app(path='/smart-tools',transport="streamable-http")
