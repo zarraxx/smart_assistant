@@ -31,6 +31,7 @@ spec:
             capabilities:
               add:
                 - NET_RAW
+                - NET_ADMIN
           volumeMounts:
             - mountPath: >- 
                 /app/.env
