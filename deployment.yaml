@@ -27,6 +27,10 @@ spec:
         - name: <IMAGE_NAME>-pod
           image: <REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>
           imagePullPolicy: Always   # 总是拉取最新镜像
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
           volumeMounts:
             - mountPath: >- 
                 /app/.env
