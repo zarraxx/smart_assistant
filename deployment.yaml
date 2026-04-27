@@ -22,6 +22,7 @@ spec:
         dev.ops.app: "<NAMESPACE>"
         dev.ops.lang: "python"
     spec:
+      nodeName: node46
       containers:
         - name: <IMAGE_NAME>-pod
           image: <REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>
