@@ -1,5 +1,5 @@
 # 1. 从基础镜像创建
-FROM registry.bsoft.com.cn/hc/python:3.12-slim
+FROM registry.bsoft.com.cn/hc/python:3.14
 
 # 设置一个环境变量来存储用户名，方便复用
 ARG APP_USER=fastapi_user
