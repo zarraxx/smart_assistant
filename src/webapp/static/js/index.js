@@ -11,6 +11,7 @@ const sendDebugMessageButtonEl = document.getElementById('sendDebugMessageButton
 const clearDebugLogButtonEl = document.getElementById('clearDebugLogButton');
 const debugLogEl = document.getElementById('debugLogEl');
 const socketFunctionHandlers = { showDepartmentAppointment, showPatientReportModal, showQueueModal };
+const defaultChatPath = window.APP_CONFIG?.defaultChatPath || '/chat/langchain';
 
 let isSending = false;
 let currentSessionId = '';
@@ -200,9 +201,7 @@ async function sendMessage() {
     try {
         payload.session_id = await ensureChatSession(userId);
 
-        //let chatPath = '/chat/completion'
-        let chatPath = '/chat/langchain'
-        const response = await fetch(buildAppUrl(chatPath), {
+        const response = await fetch(buildAppUrl(defaultChatPath), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json; charset=utf-8' },
             body: JSON.stringify(payload),

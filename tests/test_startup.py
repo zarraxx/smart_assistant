@@ -15,11 +15,15 @@ class StartupTestCase(unittest.TestCase):
             redis_url="redis://localhost:6379/0",
             default_dify_url="http://127.0.0.1:5001",
             default_dify_api_key="app-test",
+            default_chat_provider="langchain",
             session_default_expire_seconds=1200,
             session_key_prefix="smart-assistant:session",
             server_host="127.0.0.1",
             server_port=9000,
             server_reload=False,
+            openai_base_url="https://example.com/v1",
+            openai_api_key="test-key",
+            openai_model="test-model",
         )
 
         startup.main()

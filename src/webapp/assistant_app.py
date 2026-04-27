@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from src.webapp.config import get_settings
+from src.webapp.config import get_default_chat_path, get_settings
 from src.webapp.routes.chat import router as chat_router
 from src.webapp.socketio_app import socket_asgi_app, socket_server
 from src.webapp.mcp.mcp_app import mcp,mcp_app
@@ -54,7 +54,15 @@ app.mount("/mcp", mcp_app)
 def index_page(request: Request):
     root_path = request.scope.get("root_path", "")
     normalized_root_path = "" if root_path == "/" else root_path.rstrip("/")
-    return templates.TemplateResponse(request, "index.html", {"root_path": normalized_root_path})
+    settings = get_settings()
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "root_path": normalized_root_path,
+            "default_chat_path": get_default_chat_path(settings.default_chat_provider),
+        },
+    )
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ class Settings:
     redis_url: str
     default_dify_url: str
     default_dify_api_key: str
+    default_chat_provider: str
     session_default_expire_seconds: int
     session_key_prefix: str
     server_host: str
@@ -29,6 +30,7 @@ def get_settings() -> Settings:
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         default_dify_url=os.getenv("DEFAULT_DIFY_URL", "http://127.0.0.1:5001"),
         default_dify_api_key=os.getenv("DEFAULT_DIFY_API_KEY", ""),
+        default_chat_provider=_get_chat_provider_env("DEFAULT_CHAT_PROVIDER", "langchain"),
         session_default_expire_seconds=int(
             os.getenv("SESSION_DEFAULT_EXPIRE_SECONDS", str(DEFAULT_SESSION_EXPIRE_SECONDS))
         ),
@@ -48,3 +50,18 @@ def _get_bool_env(name: str, default: bool) -> bool:
         return default
 
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def get_default_chat_path(provider: str) -> str:
+    return "/chat/completion" if provider == "dify" else "/chat/langchain"
+
+
+def _get_chat_provider_env(name: str, default: str) -> str:
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    normalized = value.strip().lower()
+    if normalized in {"dify", "langchain"}:
+        return normalized
+    return default

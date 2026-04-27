@@ -2,12 +2,13 @@
 
 Chinese version: `README.zh-CN.md`
 
-Smart Assistant is a FastAPI backend for chat sessions, Dify chat proxying, and session-level Socket.IO communication.
+Smart Assistant is a FastAPI backend for chat sessions, Dify chat proxying, LangChain/OpenAI-compatible chat, and session-level Socket.IO communication.
 
 ## Features
 
 - Create chat sessions with `/chat/create`
 - Proxy Dify chat requests with `/chat/completion`
+- Run LangChain agent chat with `/chat/langchain`
 - Open a session-level Socket.IO channel at `/socket.io`
 - Provide a demo page at `/` with:
   - left side: chat UI
@@ -31,9 +32,13 @@ python -m src.startup
 | `REDIS_URL` | string | `redis://localhost:6379/0` | Redis connection URL |
 | `DEFAULT_DIFY_URL` | string | `http://127.0.0.1:5001` | Dify base URL |
 | `DEFAULT_DIFY_API_KEY` | string | empty | Dify API key |
+| `DEFAULT_CHAT_PROVIDER` | string | `langchain` | Default demo-page chat backend, supports `langchain` or `dify` |
+| `OPENAI_BASE_URL` | string | `https://dashscope.aliyuncs.com/compatible-mode/v1` | OpenAI-compatible base URL used by `/chat/langchain` |
+| `OPENAI_API_KEY` | string | empty | OpenAI-compatible API key used by `/chat/langchain` |
+| `OPENAI_MODEL` | string | `deepseek-v3` | Model name used by `/chat/langchain` |
 | `SESSION_DEFAULT_EXPIRE_SECONDS` | integer | `1200` | Default session TTL |
 | `SESSION_KEY_PREFIX` | string | `smart-assistant:session` | Redis key prefix |
-| `ROOT_PATH` | string | `/` | Reverse-proxy subpath support |
+| `ROOT_PATH` | string | `/smart_assistant` | Reverse-proxy subpath support |
 
 ## API Overview
 
@@ -41,6 +46,7 @@ python -m src.startup
 | --- | --- | --- |
 | `/chat/create` | `POST` | Create a chat session and return `session_id` |
 | `/chat/completion` | `POST` | Proxy Dify chat completion requests using `session_id` |
+| `/chat/langchain` | `POST` | Run LangChain agent chat using `session_id` |
 | `/socket.io` | `Socket.IO` | Session-level realtime message channel |
 | `/mcp/smart-tools` | `MCP HTTP` | MCP tools that can trigger session-scoped client actions |
 | `/` | `GET` | Demo page |
@@ -114,6 +120,51 @@ Proxies Dify `chat-messages` requests.
   "user": "u10001",
   "response_mode": "streaming"
 }
+```
+
+## `POST /chat/langchain`
+
+Runs the built-in LangChain agent with the current `session_id`.
+
+### Request body
+
+`/chat/langchain` reuses the same request schema as `/chat/completion`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Local chat session id; also used as the LangGraph `thread_id` |
+| `inputs` | object | no | Compatibility field; the backend preserves it and injects `__session_id__` |
+| `query` | string | yes | User query |
+| `user` | string | yes | User identifier |
+| `response_mode` | string | no | `streaming` or `blocking`, default `streaming` |
+| `files` | object[] | no | Accepted for compatibility, currently ignored |
+| `auto_generate_name` | boolean | no | Accepted for compatibility, currently ignored |
+
+### Session behavior
+
+- The backend validates `session_id` against Redis before starting the agent
+- The agent uses `session_id` as the LangGraph `thread_id`
+- Reusing the same `session_id` lets the in-process agent continue the same thread state
+- Agent tools can emit Socket.IO `message` events to the same session room
+
+### Example blocking response
+
+```json
+{
+  "event": "message",
+  "answer": "Hello, I am the Smart Assistant.",
+  "session_id": "sess_c6444707cb9d4f0b9f9022cc66a3935a"
+}
+```
+
+### Example streaming response
+
+```text
+data: {"event":"message","answer":"Hello","session_id":"sess_c6444707cb9d4f0b9f9022cc66a3935a"}
+
+data: {"event":"message","answer":", I am the Smart Assistant.","session_id":"sess_c6444707cb9d4f0b9f9022cc66a3935a"}
+
+data: [DONE]
 ```
 
 ## Socket.IO
@@ -223,6 +274,7 @@ Open `/` to use the built-in demo page:
 - Left side: chat UI
 - Right side: Socket.IO debug panel
 - The page shows the current `session_id`
+- The default chat panel target is controlled by `DEFAULT_CHAT_PROVIDER`
 - The page no longer exposes `conversation_id`
 
 ## Notes

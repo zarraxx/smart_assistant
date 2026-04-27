@@ -122,6 +122,11 @@
         </div>
     </div>
 
+    <script>
+        window.APP_CONFIG = {
+            defaultChatPath: {{ default_chat_path | tojson }}
+        };
+    </script>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
     <script src="static/js/index.js"></script>
 </body>

@@ -1,36 +1,50 @@
-from pathlib import Path
-
-from typing import Annotated,Any, AsyncIterator, Protocol
-from pydantic import Field
-
-from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
-from langchain.tools import tool, ToolRuntime
-from langgraph.checkpoint.memory import InMemorySaver
-from langchain_core.messages import AIMessageChunk
-from langchain_openai import ChatOpenAI
 from dataclasses import dataclass
 import logging
-from asgiref.sync import async_to_sync
+from pathlib import Path
+from typing import Annotated, Any, AsyncIterator, Protocol
+
+from langchain.agents import create_agent
+from langchain.tools import ToolRuntime, tool
+from langchain_core.messages import AIMessageChunk
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
+from pydantic import Field
 
 from src.webapp.socketio_app import emit_session_event
 
-class LangchainChatGateway(Protocol):
-    async def open_stream_chat_message(self, payload: dict[str, Any]): ...
 
-@dataclass
+logger = logging.getLogger(__name__)
+
+
+class LangchainGatewayError(Exception):
+    def __init__(self, *, status_code: int, detail: str):
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(detail)
+
+
+class LangchainChatGateway(Protocol):
+    async def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]: ...
+
+    async def open_stream_chat_message(self, payload: dict[str, Any]) -> AsyncIterator[str]: ...
+
+
+@dataclass(slots=True)
 class Context:
-    """Custom runtime context schema."""
     user_id: str
 
 
-async def _show_client_modal(session_id: str, function_name: str,params = {}) -> dict[str, Any]:
+async def _show_client_modal(
+    session_id: str,
+    function_name: str,
+    params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     payload = {
         "type": "function",
         "name": function_name,
-        "params": params,
+        "params": params or {},
     }
-    logging.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
+    logger.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
     await emit_session_event(session_id, payload)
     return {
         "success": True,
@@ -42,217 +56,180 @@ async def _show_client_modal(session_id: str, function_name: str,params = {}) ->
 
 @tool
 def add_number(a: int, b: int, runtime: ToolRuntime[Context]) -> int:
-    '''得到两个整数相加后的值'''
-    logging.info("call add_number")
-    user_id = runtime.context.user_id
-    logging.info(f"user_id:{user_id}")
+    """计算两个整数之和。"""
+    logger.info("call add_number for session_id=%s", runtime.context.user_id)
     return a + b
 
-# @tool
-# def showDepartmentAppointmentModal(
-#     department_name: Annotated[str, Field(description="科室名称")],
-#     runtime: ToolRuntime[Context],
-# ) -> dict:
-#     """打开科室预约界面.
-#     """
-#     #return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment")
-#
-#
-#     logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
-#     result = async_to_sync(_show_client_modal)(
-#     runtime.context.user_id,
-#     "showDepartmentAppointment"
-#     )
-#     logging.info(result)
-#     return result
 
+#@tool
 async def showDepartmentAppointmentModal(
     department_name: Annotated[str, Field(description="科室名称")],
     runtime: ToolRuntime[Context],
-) -> dict:
-    """打开科室预约界面.
-    """
-    logging.info(f"call showDepartmentAppointment session id:{runtime.context.user_id}")
-    if not department_name:
+) -> dict[str, Any]:
+    """打开科室预约弹窗。"""
+    logger.info("call showDepartmentAppointment session id:%s", runtime.context.user_id)
+    if not department_name.strip():
         return {
-        "success": False,
-        "error_msg":"department_name must not be empty",
-        "session_id": runtime.context.user_id,
+            "success": False,
+            "error_msg": "department_name must not be empty",
+            "session_id": runtime.context.user_id,
         }
-    return await _show_client_modal(runtime.context.user_id, "showDepartmentAppointment",params={"department_name": department_name})
+
+    if "挂号" in department_name:
+        return {
+            "success": False,
+            "error_msg": f"${department_name} is not a valid department name",
+            "session_id": runtime.context.user_id,
+        }
+
+    return await _show_client_modal(
+        runtime.context.user_id,
+        "showDepartmentAppointment",
+        params={"department_name": department_name.strip()},
+    )
 
 
-# @tool
-# def showPatientReportModal(
-#     runtime: ToolRuntime[Context],
-# ) -> dict:
-#     """打开客户端的报告界面.
-#     """
-#     logging.info(f"call showPatientReportModal session id:{runtime.context.user_id}")
-#     result = async_to_sync(_show_client_modal)(
-#         runtime.context.user_id,
-#         "showPatientReportModal"
-#     )
-#     logging.info(result)
-#     return result
-#     #return await _show_client_modal(runtime.context.user_id, "showPatientReportModal")
-
-
-
-async def showPatientReportModal(
-    runtime: ToolRuntime[Context],
-) -> dict:
-    """打开客户端的报告界面.
-    """
-    logging.info(f"call showPatientReportModal session id:{runtime.context.user_id}")
+#@tool
+async def showPatientReportModal(runtime: ToolRuntime[Context]) -> dict[str, Any]:
+    """打开报告弹窗。"""
+    logger.info("call showPatientReportModal session id:%s", runtime.context.user_id)
     return await _show_client_modal(runtime.context.user_id, "showPatientReportModal")
 
 
-# @tool
-# def showQueueModal(
-#     runtime: ToolRuntime[Context],
-# ) -> dict:
-#     """Trigger the queue modal on the client bound to the given session.
-#     """
-#     #return await _show_client_modal(runtime.context.user_id, "showQueueModal")
-#     logging.info(f"call showQueueModal session id:{runtime.context.user_id}")
-#     result = async_to_sync(_show_client_modal)(
-#         runtime.context.user_id,
-#         "showQueueModal"
-#     )
-#     logging.info(result)
-#     return result
-
-async def showQueueModal(
-    runtime: ToolRuntime[Context],
-) -> dict:
-    """Trigger the queue modal on the client bound to the given session.
-    """
-
-    logging.info(f"call showQueueModal session id:{runtime.context.user_id}")
+#@tool
+async def showQueueModal(runtime: ToolRuntime[Context]) -> dict[str, Any]:
+    """打开排队弹窗。"""
+    logger.info("call showQueueModal session id:%s", runtime.context.user_id)
     return await _show_client_modal(runtime.context.user_id, "showQueueModal")
 
-checkpointer=InMemorySaver()
+
+CHECKPOINTER = InMemorySaver()
+
+
 class AsyncLangchainChatGateway:
     def __init__(self, *, base_url: str, api_key: str, model: str, timeout_seconds: int = 300):
         self.base_url = _normalize_base_url(base_url)
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
-        self.checkpointer = checkpointer
-
-        model = ChatOpenAI(
-            model=model,
-            temperature=0.3,
-            max_tokens=8192,
-            timeout=timeout_seconds,
-            api_key = self.api_key,
-            base_url = self.base_url,
-            stream_usage=True,
-            # ... (other params)
-        )
-
         self.agent = create_agent(
-            model= model,
-            tools=[add_number,showDepartmentAppointmentModal,
-                   showPatientReportModal,
-                   showQueueModal],
+            model=ChatOpenAI(
+                model=model,
+                temperature=0.0,
+                max_tokens=8192,
+                timeout=timeout_seconds,
+                api_key=api_key,
+                base_url=self.base_url,
+                stream_usage=True,
+                extra_body={"enable_thinking": True},
+            ),
+            tools=[
+                add_number,
+                showDepartmentAppointmentModal,
+                showPatientReportModal,
+                showQueueModal,
+            ],
             system_prompt=self._load_prompt(),
-            checkpointer=self.checkpointer
+            checkpointer=CHECKPOINTER,
         )
+
+    async def create_blocking_chat_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        answer_parts: list[str] = []
+        async for chunk in self.open_stream_chat_message(payload):
+            answer_parts.append(chunk)
+
+        return {
+            "event": "message",
+            "answer": "".join(answer_parts),
+            "session_id": payload["session_id"],
+        }
+
+    async def open_stream_chat_message(self, payload: dict[str, Any]) -> AsyncIterator[str]:
+        session_id = _require_non_empty_string(payload.get("session_id"), field_name="session_id")
+        query = _extract_query(payload)
+        config = {"configurable": {"thread_id": session_id}}
+
+        try:
+            async for chunk in self.agent.astream(
+                {"messages": [{"role": "user", "content": query}]},
+                config=config,
+                stream_mode="messages",
+                context=Context(user_id=session_id),
+            ):
+                text = _extract_stream_text(chunk)
+                if text:
+                    yield text
+        except LangchainGatewayError:
+            raise
+        except Exception as exc:
+            logger.exception("LangChain chat request failed for session_id=%s", session_id)
+            raise LangchainGatewayError(status_code=502, detail=str(exc)) from exc
 
     def _load_prompt(self) -> str:
-        # 获取当前 py 文件同目录下的 prompt.md
         prompt_path = Path(__file__).parent / "prompt.md"
-
         if not prompt_path.exists():
-            # 给出友好的报错或默认值
             return "You are a helpful assistant."
-
         return prompt_path.read_text(encoding="utf-8")
 
-    async def open_stream_chat_message(self, payload: dict[str, Any]):
-        session_id = payload["session_id"]
-        config = {"configurable": {"thread_id": session_id}}
-        async for chunk in   self.agent.astream(
-            {"messages": [{"role": payload["role"], "content": payload["content"]}]},
-                {"configurable": {"thread_id": session_id}},
-            stream_mode="messages",
-            context=Context(user_id=session_id),
-        ):
-            if isinstance(chunk, tuple):
-                message_chunk = next((x for x in chunk if isinstance(x, AIMessageChunk)), None)
-                logging.info(message_chunk)
-                if message_chunk:
-                    yield message_chunk
-            else:
-                if isinstance(chunk, AIMessageChunk):
-                    yield chunk
 
+def _extract_query(payload: dict[str, Any]) -> str:
+    query = payload.get("query")
+    if isinstance(query, str) and query.strip():
+        return query.strip()
+
+    content = payload.get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+
+    raise LangchainGatewayError(status_code=400, detail="query is required")
+
+
+def _extract_stream_text(chunk: Any) -> str:
+    if isinstance(chunk, tuple):
+        for item in chunk:
+            text = _extract_stream_text(item)
+            if text:
+                return text
+        return ""
+
+    if isinstance(chunk, AIMessageChunk):
+        return _normalize_message_content(chunk.content)
+    return ""
+    #content = getattr(chunk, "content", None)
+    #return _normalize_message_content(content)
+
+
+def _normalize_message_content(content: Any) -> str:
+    logger.debug("Normalizing message content: %s", content)
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                text_parts.append(item)
+                continue
+
+            if isinstance(item, dict):
+                text = item.get("text")
+                if isinstance(text, str):
+                    text_parts.append(text)
+
+        return "".join(text_parts)
+
+    return ""
+
+
+def _require_non_empty_string(value: Any, *, field_name: str) -> str:
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    raise LangchainGatewayError(status_code=400, detail=f"{field_name} is required")
 
 
 def _normalize_base_url(base_url: str) -> str:
-    normalized_url = base_url.rstrip("/")
+    normalized_url = (base_url or "").strip().rstrip("/")
+    if not normalized_url:
+        return "https://api.openai.com/v1"
     if normalized_url.endswith("/v1"):
         return normalized_url
     return f"{normalized_url}/v1"
-
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-
-    load_dotenv()
-    import os, sys
-    import asyncio
-
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    async def main() -> None:
-        model_name = os.environ.get("OPENAI_MODEL")
-        api_key = os.environ.get("OPENAI_API_KEY")
-        base_url = os.environ.get("OPENAI_BASE_URL")
-        model = ChatOpenAI(
-            model=model_name,
-            temperature=0.3,
-            max_tokens=8192,
-            timeout=30,
-            api_key=api_key,
-            base_url=_normalize_base_url(base_url),
-            stream_usage=True,
-
-        )
-
-
-        checkpointer = InMemorySaver()
-
-        async def add_number_async(a: int, b: int, runtime: ToolRuntime[Context]) -> int:
-            '''得到两个整数相加后的值'''
-            logging.info("call add_number")
-            user_id = runtime.context.user_id
-            logging.info(f"user_id:{user_id}")
-            return a + b
-
-        agent = create_agent(
-            model=model,
-            tools=[add_number_async],
-            system_prompt="You are a helpful assistant",
-            checkpointer=checkpointer
-        )
-        config = {"configurable": {"thread_id": "1"}}
-
-        async for chunk in agent.astream(
-            {"messages": [{"role": "user", "content": "你好介绍一下你自己! 算一下 5+12等于多少"}]},
-                stream_mode="messages",
-                config=config,
-                context=Context(user_id="1"),
-        ):
-            message_chunk = chunk
-            if isinstance(chunk,tuple):
-                message_chunk = next((x for x in chunk if isinstance(x,AIMessageChunk)), None)
-
-            if message_chunk:
-                print(message_chunk)
-            # if hasattr(message_chunk, "content"):
-            #     print(message_chunk.content, end="", flush=True)
-
-    asyncio.run(main())
