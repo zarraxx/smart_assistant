@@ -20,6 +20,7 @@ Example:
 """
 
 import json
+import ssl
 import os
 from typing import IO, Any, Dict, List, Literal, Union
 
@@ -53,9 +54,16 @@ class AsyncDifyClient:
         """
         self.api_key = api_key
         self.base_url = base_url
+
+        ssl_context = ssl.create_default_context()
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        ssl_context.maximum_version = ssl.TLSVersion.TLSv1_2
+
         self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=httpx.Timeout(timeout, connect=120.0),
+            verify=ssl_context,
+            http2=False,
         )
 
     async def __aenter__(self):
