@@ -55,7 +55,7 @@ class AsyncDifyClient:
         self.base_url = base_url
         self._client = httpx.AsyncClient(
             base_url=base_url,
-            timeout=httpx.Timeout(timeout, connect=5.0),
+            timeout=httpx.Timeout(timeout, connect=120.0),
         )
 
     async def __aenter__(self):
