@@ -14,10 +14,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 mcp = FastMCP("Smart Tools")
 
 
-async def _show_client_modal(session_id: str, function_name: str) -> dict[str, Any]:
+async def _show_client_modal(function_name: str) -> dict[str, Any]:
 
     request: Request = get_http_request()
-    dify_conversion_id = request.query_params.get("session", "unknown_session")
+    session_id = request.query_params.get("session", "unknown_session")
+    dify_conversion_id = request.query_params.get("dify_conversion_id", "unknown_dify_conversion_id")
     logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s", session_id, dify_conversion_id, function_name)    
     
 
@@ -50,38 +51,29 @@ def echo(
 
 @mcp.tool
 async def showDepartmentAppointmentModal(
-    session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
+    #session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
 ) -> dict:
     """Trigger the department appointment modal on the client bound to the given session.
-
-    Args:
-        session_id: The Dify session_id used to route the Socket.IO event to the correct client session.
     """
-    return await _show_client_modal(session_id, "showDepartmentAppointment")
+    return await _show_client_modal( "showDepartmentAppointment")
 
 
 @mcp.tool
 async def showPatientReportModal(
-    session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
+    #session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
 ) -> dict:
     """Trigger the patient report modal on the client bound to the given session.
-
-    Args:
-        session_id: The Dify session_id used to route the Socket.IO event to the correct client session.
     """
-    return await _show_client_modal(session_id, "showPatientReportModal")
+    return await _show_client_modal( "showPatientReportModal")
 
 
 @mcp.tool
 async def showQueueModal(
-    session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
+    #session_id: Annotated[str, Field(description="The Dify session_id used to route the Socket.IO event to the correct client session.")],
 ) -> dict:
     """Trigger the queue modal on the client bound to the given session.
-
-    Args:
-        session_id: The Dify session_id used to route the Socket.IO event to the correct client session.
     """
-    return await _show_client_modal(session_id, "showQueueModal")
+    return await _show_client_modal( "showQueueModal")
 
 
 mcp_app = mcp.http_app(path='/smart-tools',transport="streamable-http")
