@@ -4,14 +4,23 @@ from typing import Any
 from fastmcp import FastMCP
 from pydantic import Field
 
-import logging
+from fastmcp.server.dependencies import get_http_request
+from starlette.requests import Request
 from src.webapp.socketio_app import emit_session_event
 
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 mcp = FastMCP("Smart Tools")
 
 
 async def _show_client_modal(session_id: str, function_name: str) -> dict[str, Any]:
+
+    request: Request = get_http_request()
+    dify_conversion_id = request.query_params.get("session", "unknown_session")
+    logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s", session_id, dify_conversion_id, function_name)    
+    
+
     payload = {
         "type": "function",
         "name": function_name,
