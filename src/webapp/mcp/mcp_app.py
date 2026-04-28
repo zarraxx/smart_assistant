@@ -18,7 +18,7 @@ async def _show_client_modal(function_name: str) -> dict[str, Any]:
 
     request: Request = get_http_request()
     session_id = request.query_params.get("session", "unknown_session")
-    dify_conversion_id = request.query_params.get("dify_conversion_id", "unknown_dify_conversion_id")
+    dify_conversion_id = request.query_params.get("conversionId", "unknown_dify_conversion_id")
     logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s", session_id, dify_conversion_id, function_name)    
     
 
