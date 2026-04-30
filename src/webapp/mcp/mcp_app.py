@@ -1,5 +1,5 @@
-from typing import Annotated
-from typing import Any
+
+from typing import Annotated,Optional, Dict, Any
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -15,27 +15,32 @@ mcp = FastMCP("Smart Tools")
 
 
 @mcp.tool
-async def execute_client_function(function_name:  Annotated[str, Field(description='要在客户端执行的方法的名称')]
-                            ) -> dict[str, Any]:
+async def execute_client_function(
+        function_name: Annotated[str, Field(description='要在客户端执行的方法的名称')],
+        params: Annotated[Optional[Dict[str, Any]],
+            Field(default=None, description='要发送给浏览器的函数参数，类型是字典（JSON对象）')] = None
+) -> dict[str, Any]:
     """根据函数名称，在浏览器端执行相应的方法
 
-        Args:
-            function_name: 要在客户端执行的方法的名称.
-        """
+    Args:
+        function_name: 要在客户端执行的方法的名称
+        params: 可选的，发送给浏览器的函数参数，类型为字典
 
+    """
     request: Request = get_http_request()
     session_id = request.query_params.get("session", "unknown_session")
     dify_conversion_id = request.query_params.get("conversionId", "unknown_dify_conversion_id")
-    logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s", session_id, dify_conversion_id, function_name)    
-    
+    logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s",
+                 session_id, dify_conversion_id, function_name)
 
     payload = {
         "type": "function",
         "name": function_name,
-        "params": {},
+        "params": params or {},  # 如果 params 为 None，使用一个空字典
     }
     logging.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
     await emit_session_event(session_id, payload)
+
     return {
         "success": True,
         "session_id": session_id,
