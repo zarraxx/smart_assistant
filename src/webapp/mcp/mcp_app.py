@@ -3,7 +3,7 @@ from typing import Annotated,Optional, Dict, Any
 
 from fastmcp import FastMCP
 from pydantic import Field
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from fastmcp.server.dependencies import get_http_request
 from starlette.requests import Request
@@ -13,6 +13,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 mcp = FastMCP("Smart Tools")
+gmt8 = timezone(timedelta(hours=8))
 
 @mcp.tool
 async def execute_client_function(
@@ -39,7 +40,7 @@ async def execute_client_function(
             "success": True,
             "session_id": session_id,
             "event": "message",
-            "payload": {"result": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+            "payload": {"result": datetime.now(gmt8).strftime("%Y-%m-%d %H:%M:%S %z")},
         }
     else:
         payload = {
