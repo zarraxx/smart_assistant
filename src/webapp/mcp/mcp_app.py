@@ -3,6 +3,7 @@ from typing import Annotated,Optional, Dict, Any
 
 from fastmcp import FastMCP
 from pydantic import Field
+from datetime import datetime
 
 from fastmcp.server.dependencies import get_http_request
 from starlette.requests import Request
@@ -12,7 +13,6 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 mcp = FastMCP("Smart Tools")
-
 
 @mcp.tool
 async def execute_client_function(
@@ -33,20 +33,29 @@ async def execute_client_function(
     logging.info("Preparing to emit Socket.IO event for session_id=%s (Dify conversion_id=%s) with function_name=%s",
                  session_id, dify_conversion_id, function_name)
 
-    payload = {
-        "type": "function",
-        "name": function_name,
-        "params": params or {},  # 如果 params 为 None，使用一个空字典
-    }
-    logging.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
-    await emit_session_event(session_id, payload)
 
-    return {
-        "success": True,
-        "session_id": session_id,
-        "event": "message",
-        "payload": payload,
-    }
+    if function_name in ["today","now"]:
+        return {
+            "success": True,
+            "session_id": session_id,
+            "event": "message",
+            "payload": {"result": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        }
+    else:
+        payload = {
+            "type": "function",
+            "name": function_name,
+            "params": params or {},  # 如果 params 为 None，使用一个空字典
+        }
+        logging.info("Emitting Socket.IO event for session_id=%s with payload=%s", session_id, payload)
+        await emit_session_event(session_id, payload)
+
+        return {
+            "success": True,
+            "session_id": session_id,
+            "event": "message",
+            "payload": payload,
+        }
 
 @mcp.tool
 def echo(
