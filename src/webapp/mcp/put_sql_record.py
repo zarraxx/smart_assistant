@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
@@ -34,6 +35,7 @@ INSERT_CHAT_HISTORY_SQL = text(
 )
 
 SOCKETIO_MESSAGE_PAGE = "socketio.message"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +50,12 @@ async def put_socketio_message_record(
     *,
     event: str = "message",
 ) -> str:
+    logger.info(
+        "Preparing to insert Socket.IO chat history record for session_id=%s event=%s payload_type=%s",
+        session_id,
+        event,
+        payload.get("type"),
+    )
     session_factory = get_async_session_factory()
     async with session_factory() as db_session:
         message_id = await insert_socketio_message_record(
@@ -57,6 +65,11 @@ async def put_socketio_message_record(
             event=event,
         )
         await db_session.commit()
+        logger.info(
+            "Inserted Socket.IO chat history record message_id=%s session_id=%s",
+            message_id,
+            session_id,
+        )
         return message_id
 
 
@@ -95,8 +108,15 @@ async def get_session_binding(db_session: AsyncSession, *, session_id: str) -> S
     result = await db_session.execute(SESSION_BINDING_SQL, {"session_id": session_id})
     row = result.mappings().first()
     if row is None:
+        logger.warning("Chat session binding not found for session_id=%s", session_id)
         raise ValueError(f"Chat session binding not found for session_id={session_id}")
 
+    logger.debug(
+        "Loaded chat session binding for session_id=%s app_id=%s dify_user_id=%s",
+        session_id,
+        row["c_app_id"],
+        row["c_dify_user_id"],
+    )
     return SessionBinding(app_id=row["c_app_id"], dify_user_id=row["c_dify_user_id"])
 
 
