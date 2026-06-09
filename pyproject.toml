@@ -21,6 +21,7 @@ dependencies = [
     "langchain>=1.2.10",
     "langchain-openai>=1.1.11",
     "asgiref>=3.11.1",
+    "aiomysql>=0.3.2",
 ]
 
 [[tool.uv.index]]
