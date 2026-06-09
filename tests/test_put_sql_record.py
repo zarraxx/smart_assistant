@@ -1,5 +1,6 @@
 import json
 import unittest
+from datetime import datetime
 from unittest.mock import patch
 from uuid import UUID
 
@@ -71,7 +72,9 @@ class PutSqlRecordTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("FROM t_ai_chat_session", str(select_sql))
         self.assertEqual(select_params, {"session_id": "sess_789"})
         self.assertIn("INSERT INTO ai_gateway.t_chat_history", str(insert_sql))
+        self.assertNotIn("NOW()", str(insert_sql))
         self.assertEqual(insert_params["messageId"], message_id)
+        self.assertIsInstance(insert_params["create_date"], datetime)
         self.assertEqual(insert_params["user_msg"], "")
         self.assertEqual(insert_params["c_dify_user_id"], "user_456")
         self.assertEqual(insert_params["app_id"], "app_123")

@@ -1,6 +1,7 @@
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
@@ -27,7 +28,7 @@ INSERT_CHAT_HISTORY_SQL = text(
         c_channel, c_session_id, c_message_id, c_page, c_message_type
     ) VALUES (
         :messageId, :ai_msg, NULL, NULL, NULL,
-        NOW(), NULL, NULL, NULL, NULL,
+        :create_date, NULL, NULL, NULL, NULL,
         NULL, NULL, :user_msg, :c_dify_user_id, :app_id,
         NULL, :session_id, NULL, :page, 'NO_CHAT'
     )
@@ -82,6 +83,7 @@ async def insert_socketio_message_record(
 ) -> str:
     binding = await get_session_binding(db_session, session_id=session_id)
     message_id = str(uuid4())
+    create_date = datetime.now()
     ai_msg = {
         "success": True,
         "session_id": session_id,
@@ -94,6 +96,7 @@ async def insert_socketio_message_record(
         {
             "messageId": message_id,
             "ai_msg": _to_json(ai_msg),
+            "create_date": create_date,
             "user_msg": "",
             "c_dify_user_id": binding.dify_user_id,
             "app_id": binding.app_id,
