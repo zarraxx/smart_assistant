@@ -36,6 +36,7 @@ python -m src.startup
 | `OPENAI_BASE_URL` | string | `https://dashscope.aliyuncs.com/compatible-mode/v1` | OpenAI-compatible base URL used by `/chat/langchain` |
 | `OPENAI_API_KEY` | string | empty | OpenAI-compatible API key used by `/chat/langchain` |
 | `OPENAI_MODEL` | string | `deepseek-v3` | Model name used by `/chat/langchain` |
+| `SQLALCHEMY_DATABASE_URL` | string | required for MCP Socket.IO history writes | Async SQLAlchemy database URL used to load chat session bindings and write `ai_gateway.t_chat_history` records before MCP-triggered Socket.IO events |
 | `SESSION_DEFAULT_EXPIRE_SECONDS` | integer | `1200` | Default session TTL |
 | `SESSION_KEY_PREFIX` | string | `smart-assistant:session` | Redis key prefix |
 | `ROOT_PATH` | string | `/smart_assistant` | Reverse-proxy subpath support |
@@ -218,6 +219,8 @@ When the server receives this payload, it sends back `params` to the same Socket
 ## MCP Tools
 
 MCP is mounted under `/mcp`, and the Smart Tools HTTP app is exposed at `/mcp/smart-tools`.
+
+Before an MCP tool emits a Socket.IO `message` event, the backend loads `c_app_id` and `c_dify_user_id` from `t_ai_chat_session` by `session_id`, then inserts a `NO_CHAT` row into `ai_gateway.t_chat_history` with `c_page` set to `socketio.message`.
 
 ### `showDepartmentAppointmentModal`
 

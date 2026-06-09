@@ -74,9 +74,13 @@ class McpToolSocketBridgeTestCase(unittest.IsolatedAsyncioTestCase):
             "params": {},
         }
 
-        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+        with (
+            patch("src.webapp.mcp.mcp_app.put_socketio_message_record", new=AsyncMock()) as mock_record,
+            patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit,
+        ):
             result = await showDepartmentAppointmentModal("sess_789")
 
+        mock_record.assert_awaited_once_with("sess_789", expected_payload)
         mock_emit.assert_awaited_once_with("sess_789", expected_payload)
         self.assertEqual(result["success"], True)
         self.assertEqual(result["session_id"], "sess_789")
@@ -89,9 +93,13 @@ class McpToolSocketBridgeTestCase(unittest.IsolatedAsyncioTestCase):
             "params": {},
         }
 
-        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+        with (
+            patch("src.webapp.mcp.mcp_app.put_socketio_message_record", new=AsyncMock()) as mock_record,
+            patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit,
+        ):
             result = await showPatientReportModal("sess_789")
 
+        mock_record.assert_awaited_once_with("sess_789", expected_payload)
         mock_emit.assert_awaited_once_with("sess_789", expected_payload)
         self.assertEqual(result["success"], True)
         self.assertEqual(result["session_id"], "sess_789")
@@ -104,9 +112,13 @@ class McpToolSocketBridgeTestCase(unittest.IsolatedAsyncioTestCase):
             "params": {},
         }
 
-        with patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit:
+        with (
+            patch("src.webapp.mcp.mcp_app.put_socketio_message_record", new=AsyncMock()) as mock_record,
+            patch("src.webapp.mcp.mcp_app.emit_session_event", new=AsyncMock()) as mock_emit,
+        ):
             result = await showQueueModal("sess_789")
 
+        mock_record.assert_awaited_once_with("sess_789", expected_payload)
         mock_emit.assert_awaited_once_with("sess_789", expected_payload)
         self.assertEqual(result["success"], True)
         self.assertEqual(result["session_id"], "sess_789")
